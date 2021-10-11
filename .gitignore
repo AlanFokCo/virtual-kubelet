@@ -5,6 +5,8 @@
 *.dylib
 bin/
 
+vendor
+
 # Certificates
 *.pem
 !hack/skaffold/virtual-kubelet/vkubelet-mock-0-crt.pem
