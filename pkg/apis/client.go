@@ -1,20 +1,19 @@
 package apis
 
 import (
-	tool "github.com/docker/go-docker"
-	"net/http"
+	tool "github.com/docker/docker/client"
 )
 
 type UnixSocketClient struct {
 	Client *tool.Client
 }
 
-func NewUnixSocketClient(host string, version string, client *http.Client, httpHeaders map[string]string) (*UnixSocketClient, error) {
-	dockerClient, err := tool.NewClient(host, version, client, httpHeaders)
+func NewUnixSocketClient() (*UnixSocketClient, error) {
+	client, err := tool.NewClientWithOpts(tool.FromEnv)
 	if err != nil {
 		return nil, err
 	}
 	return &UnixSocketClient{
-		Client: dockerClient,
+		Client: client,
 	}, nil
 }
