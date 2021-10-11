@@ -89,6 +89,18 @@ func (provider *TestProvider) UpdatePod(ctx context.Context, pod *v1.Pod) error 
 	return nil
 }
 
+func (provider *TestProvider) GetPod(ctx context.Context, namespace, name string) (*v1.Pod, error) {
+	return nil, nil
+}
+
+func (provider *TestProvider) GetPodStatus(ctx context.Context, namespace, name string) (*v1.PodStatus, error) {
+	return nil, nil
+}
+
+func (provider *TestProvider) GetPods(context.Context) ([]*v1.Pod, error) {
+	return nil, nil
+}
+
 func reserveContainersArray(containers []ContainerData) ([]ContainerData, error) {
 	length := len(containers)
 	if length < 1 {
