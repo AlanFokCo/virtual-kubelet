@@ -12,6 +12,11 @@ func (client *UnixSocketClient) CreateDockerContainer(context context.Context, n
 		DockerMap = make(map[string]string)
 	}
 
+	_, err := client.Client.ImagePull(context, image, types.ImagePullOptions{})
+	if err != nil {
+		return err
+	}
+
 	resp, err := client.Client.ContainerCreate(context, &container.Config{
 		Image: image,
 		Cmd: []string{},
@@ -36,7 +41,7 @@ func (client *UnixSocketClient) DeleteDockerContainer(context context.Context, n
 func (client *UnixSocketClient) CheckpointDockerContainer(context context.Context, name, namespace, containerName, checkpointID string, exit bool) error {
 	err := client.Client.CheckpointCreate(context, DockerMap[GetContainerName(name, namespace, containerName)], types.CheckpointCreateOptions{
 		CheckpointID: checkpointID,
-		CheckpointDir: "/opt/checkpoint/" + checkpointID,
+		//CheckpointDir: "/opt/checkpoint/" + checkpointID,
 		Exit: exit,
 	})
 	if err != nil{
@@ -48,7 +53,7 @@ func (client *UnixSocketClient) CheckpointDockerContainer(context context.Contex
 func (client *UnixSocketClient) RestoreDockerContainer(context context.Context, name, namespace, containerName, checkpointID string) error {
 	err := client.Client.ContainerStart(context, DockerMap[GetContainerName(name, namespace, containerName)], types.ContainerStartOptions{
 		CheckpointID: checkpointID,
-		CheckpointDir: "/opt/checkpoint/" + checkpointID,
+		//CheckpointDir: "/opt/checkpoint/" + checkpointID,
 	})
 	if err != nil{
 		return err

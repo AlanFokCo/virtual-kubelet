@@ -4,6 +4,8 @@ import (
 	tool "github.com/docker/docker/client"
 )
 
+var DockerMap map[string]string
+
 type UnixSocketClient struct {
 	Client *tool.Client
 }
