@@ -2,19 +2,20 @@ package apis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 )
 
-func (client *UnixSocketClient) CreateDockerContainer(context context.Context, name, namespace, containerName, image string) error {
+func (client *UnixSocketClient) CreateDockerContainer(context context.Context, name, namespace, containerName, image string) (string, error) {
 	if DockerMap == nil {
 		DockerMap = make(map[string]string)
 	}
 
 	_, err := client.Client.ImagePull(context, image, types.ImagePullOptions{})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	resp, err := client.Client.ContainerCreate(context, &container.Config{
@@ -22,12 +23,12 @@ func (client *UnixSocketClient) CreateDockerContainer(context context.Context, n
 		Cmd: []string{},
 	}, nil, nil, GetContainerName(name, namespace, containerName))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	DockerMap[GetContainerName(name, namespace, containerName)] = resp.ID
 
-	return nil
+	return resp.ID, nil
 }
 
 func (client *UnixSocketClient) DeleteDockerContainer(context context.Context, name, namespace, containerName string) error {
@@ -59,6 +60,19 @@ func (client *UnixSocketClient) RestoreDockerContainer(context context.Context, 
 		return err
 	}
 	return nil
+}
+
+func (client *UnixSocketClient) GetContainerMessage(context context.Context, containerID string) (*types.Container, error) {
+	containers, err := client.Client.ContainerList(context, types.ContainerListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for index, _ := range containers {
+		if containers[index].ID == containerID {
+			return &containers[index], nil
+		}
+	}
+	return nil, errors.New("No containers.")
 }
 
 func GetContainerName(name, namespace, containerName string) string {
