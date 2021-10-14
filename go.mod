@@ -7,7 +7,7 @@ require (
 	contrib.go.opencensus.io/exporter/ocagent v0.4.12
 	docker.io/go-docker v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.5.0 // indirect
-	github.com/bombsimon/logrusr v1.0.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -37,8 +37,9 @@ require (
 	k8s.io/client-go v0.19.10
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.2.0
+	k8s.io/kubernetes v0.0.0-00010101000000-000000000000
 	k8s.io/utils v0.0.0-20200912215256-4140de9c8800
-	sigs.k8s.io/controller-runtime v0.7.1
+	sigs.k8s.io/controller-runtime v0.7.1 // indirect
 )
 
 replace (
@@ -60,6 +61,7 @@ replace (
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.18.5
 	k8s.io/kubectl => k8s.io/kubectl v0.18.5
 	k8s.io/kubelet => k8s.io/kubelet v0.18.5
+	k8s.io/kubernetes => k8s.io/kubernetes v1.14.3
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.18.5
 	k8s.io/metrics => k8s.io/metrics v0.18.5
 	k8s.io/node-api => k8s.io/node-api v0.18.5

@@ -14,8 +14,8 @@
 
 /*
 Package node implements the components for operating a node in Kubernetes.
-This includes controllers for managing the node object, running scheduled pods,
-and exporting HTTP endpoints expected by the Kubernetes API server.
+This includes controllers for managin the node object, running scheduled pods,
+and exporting HTTP endpoints expected by the Kubernets API server.
 
 There are two primary controllers, the node runner and the pod runner.
 
@@ -27,10 +27,9 @@ There are two primary controllers, the node runner and the pod runner.
 
 	select {
 	case <-podRunner.Ready():
-	case <-podRunner.Done():
-	}
-	if podRunner.Err() != nil {
-		// handle error
+		go nodeRunner.Run(ctx)
+	case <-ctx.Done()
+		return ctx.Err()
 	}
 
 After calling start, cancelling the passed in context will shutdown the

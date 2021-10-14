@@ -24,15 +24,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-type PodListerFunc func(context.Context) ([]*v1.Pod, error) // nolint:golint
+type PodListerFunc func(context.Context) ([]*v1.Pod, error)
 
-func HandleRunningPods(getPods PodListerFunc) http.HandlerFunc { // nolint:golint
-	if getPods == nil {
-		return NotImplemented
-	}
-
+func HandleRunningPods(getPods PodListerFunc) http.HandlerFunc {
 	scheme := runtime.NewScheme()
-	v1.SchemeBuilder.AddToScheme(scheme) //nolint:errcheck
+	v1.SchemeBuilder.AddToScheme(scheme)
 	codecs := serializer.NewCodecFactory(scheme)
 
 	return handleError(func(w http.ResponseWriter, req *http.Request) error {

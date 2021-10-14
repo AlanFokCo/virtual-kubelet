@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/virtual-kubelet/virtual-kubelet/internal/manager"
+	"github.com/virtual-kubelet/virtual-kubelet/node/api"
 	"github.com/virtual-kubelet/virtual-kubelet/pkg/apis"
 	"github.com/virtual-kubelet/virtual-kubelet/pkg/config"
+	"io"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"strconv"
@@ -15,6 +18,7 @@ import (
 )
 
 type TestProvider struct {
+	Provider
 	client   		   apis.UnixSocketClient
 	resourceManager    *manager.ResourceManager
 	resourceGroup    	string
@@ -191,6 +195,51 @@ func (provider *TestProvider) GetPods(ctx context.Context) ([]*v1.Pod, error) {
 
 	return nil, nil
 }
+
+func (provider *TestProvider) GetContainerLogs(ctx context.Context, namespace, podName, containerName string, opts api.ContainerLogOpts) (io.ReadCloser, error){
+	return nil, nil
+}
+
+func (provider *TestProvider) RunInContainer(ctx context.Context, namespace, podName, containerName string, cmd []string, attach api.AttachIO) error {
+	return nil
+}
+
+func (provider *TestProvider) Capacity(ctx context.Context) v1.ResourceList {
+	return v1.ResourceList{
+		"cpu":    resource.MustParse(provider.cpu),
+		"memory": resource.MustParse(provider.memory),
+		"pods":   resource.MustParse(provider.pods),
+	}
+}
+
+
+// NodeAddresses returns a list of addresses for the node status
+// within Kubernetes.
+func (provider *TestProvider) NodeAddresses(ctx context.Context) []v1.NodeAddress {
+	// TODO: Make these dynamic and augment with custom ECI specific conditions of interest
+	return []v1.NodeAddress{
+		{
+			Type:    "InternalIP",
+			Address: provider.internalIP,
+		},
+	}
+}
+
+// NodeDaemonEndpoints returns NodeDaemonEndpoints for the node status
+// within Kubernetes.
+func (provider *TestProvider) NodeDaemonEndpoints(ctx context.Context) *v1.NodeDaemonEndpoints {
+	return &v1.NodeDaemonEndpoints{
+		KubeletEndpoint: v1.DaemonEndpoint{
+			Port: provider.daemonEndpointPort,
+		},
+	}
+}
+
+// OperatingSystem returns the operating system that was provided by the config.
+func (provider *TestProvider) OperatingSystem() string {
+	return provider.operatingSystem
+}
+
 
 
 

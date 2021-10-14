@@ -24,9 +24,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/virtual-kubelet/virtual-kubelet/errdefs"
-	"github.com/virtual-kubelet/virtual-kubelet/internal/kubernetes/remotecommand"
 	"k8s.io/apimachinery/pkg/types"
 	remoteutils "k8s.io/client-go/tools/remotecommand"
+	api "k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/kubernetes/pkg/kubelet/server/remotecommand"
 )
 
 // ContainerExecHandlerFunc defines the handler function used for "execing" into a
@@ -48,53 +49,13 @@ type TermSize struct {
 	Height uint16
 }
 
-// ContainerExecHandlerConfig is used to pass options to options to the container exec handler.
-type ContainerExecHandlerConfig struct {
-	// StreamIdleTimeout is the maximum time a streaming connection
-	// can be idle before the connection is automatically closed.
-	StreamIdleTimeout time.Duration
-	// StreamCreationTimeout is the maximum time for streaming connection
-	StreamCreationTimeout time.Duration
-}
-
-// ContainerExecHandlerOption configures a ContainerExecHandlerConfig
-// It is used as functional options passed to `HandleContainerExec`
-type ContainerExecHandlerOption func(*ContainerExecHandlerConfig)
-
-// WithExecStreamIdleTimeout sets the idle timeout for a container exec stream
-func WithExecStreamIdleTimeout(dur time.Duration) ContainerExecHandlerOption {
-	return func(cfg *ContainerExecHandlerConfig) {
-		cfg.StreamIdleTimeout = dur
-	}
-}
-
-// WithExecStreamCreationTimeout sets the creation timeout for a container exec stream
-func WithExecStreamCreationTimeout(dur time.Duration) ContainerExecHandlerOption {
-	return func(cfg *ContainerExecHandlerConfig) {
-		cfg.StreamCreationTimeout = dur
-	}
-}
-
 // HandleContainerExec makes an http handler func from a Provider which execs a command in a pod's container
 // Note that this handler currently depends on gorrilla/mux to get url parts as variables.
 // TODO(@cpuguy83): don't force gorilla/mux on consumers of this function
-func HandleContainerExec(h ContainerExecHandlerFunc, opts ...ContainerExecHandlerOption) http.HandlerFunc {
+func HandleContainerExec(h ContainerExecHandlerFunc) http.HandlerFunc {
 	if h == nil {
 		return NotImplemented
 	}
-
-	var cfg ContainerExecHandlerConfig
-	for _, o := range opts {
-		o(&cfg)
-	}
-
-	if cfg.StreamIdleTimeout == 0 {
-		cfg.StreamIdleTimeout = 30 * time.Second
-	}
-	if cfg.StreamCreationTimeout == 0 {
-		cfg.StreamCreationTimeout = 30 * time.Second
-	}
-
 	return handleError(func(w http.ResponseWriter, req *http.Request) error {
 		vars := mux.Vars(req)
 
@@ -112,41 +73,24 @@ func HandleContainerExec(h ContainerExecHandlerFunc, opts ...ContainerExecHandle
 			return errdefs.AsInvalidInput(err)
 		}
 
-		// TODO: Why aren't we using req.Context() here?
+		idleTimeout := time.Second * 30
+		streamCreationTimeout := time.Second * 30
+
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
 		exec := &containerExecContext{ctx: ctx, h: h, pod: pod, namespace: namespace, container: container}
-		remotecommand.ServeExec(
-			w,
-			req,
-			exec,
-			"",
-			"",
-			container,
-			command,
-			streamOpts,
-			cfg.StreamIdleTimeout,
-			cfg.StreamCreationTimeout,
-			supportedStreamProtocols,
-		)
+		remotecommand.ServeExec(w, req, exec, "", "", container, command, streamOpts, idleTimeout, streamCreationTimeout, supportedStreamProtocols)
 
 		return nil
 	})
 }
 
-const (
-	execTTYParam    = "tty"
-	execStdinParam  = "input"
-	execStdoutParam = "output"
-	execStderrParam = "error"
-)
-
 func getExecOptions(req *http.Request) (*remotecommand.Options, error) {
-	tty := req.FormValue(execTTYParam) == "1"
-	stdin := req.FormValue(execStdinParam) == "1"
-	stdout := req.FormValue(execStdoutParam) == "1"
-	stderr := req.FormValue(execStderrParam) == "1"
+	tty := req.FormValue(api.ExecTTYParam) == "1"
+	stdin := req.FormValue(api.ExecStdinParam) == "1"
+	stdout := req.FormValue(api.ExecStdoutParam) == "1"
+	stderr := req.FormValue(api.ExecStderrParam) == "1"
 	if tty && stderr {
 		return nil, errors.New("cannot exec with tty and stderr")
 	}
@@ -165,6 +109,7 @@ func getExecOptions(req *http.Request) (*remotecommand.Options, error) {
 
 type containerExecContext struct {
 	h                         ContainerExecHandlerFunc
+	eio                       *execIO
 	namespace, pod, container string
 	ctx                       context.Context
 }

@@ -33,7 +33,7 @@ func handleError(f handlerFunc) http.HandlerFunc {
 
 		code := httpStatusCode(err)
 		w.WriteHeader(code)
-		io.WriteString(w, err.Error()) //nolint:errcheck
+		io.WriteString(w, err.Error())
 		logger := log.G(req.Context()).WithError(err).WithField("httpStatusCode", code)
 
 		if code >= 500 {
@@ -56,14 +56,16 @@ type flushWriter struct {
 }
 
 type writeFlusher interface {
-	Flush()
+	Flush() error
 	Write([]byte) (int, error)
 }
 
 func (fw *flushWriter) Write(p []byte) (int, error) {
 	n, err := fw.w.Write(p)
 	if n > 0 {
-		fw.w.Flush()
+		if err := fw.w.Flush(); err != nil {
+			return n, err
+		}
 	}
 	return n, err
 }
